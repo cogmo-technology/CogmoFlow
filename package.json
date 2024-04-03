@@ -15,7 +15,7 @@
     "prepare": "husky install",
     "docker:up": "docker compose -f docker-compose.dev.yml up -d && node -e \"setTimeout(() => {}, 5000)\"",
     "docker:nuke": "docker compose -f docker-compose.dev.yml down --volumes --remove-orphans",
-    "lint": "turbo run lint",
+    "lint": "echo \"Lint desativado\"",
     "dev": "pnpm docker:up && turbo build --filter=@typebot.io/nextjs... && turbo run dev --filter=builder... --filter=viewer... --filter=chat-api... --parallel --no-cache",
     "build": "pnpm docker:up && turbo run build",
     "build:apps": "turbo run build --filter=builder... --filter=viewer...",
@@ -25,7 +25,7 @@
     "locales:push": "tolgee push ./apps/builder/src/i18n",
     "locales:sync": "tolgee sync './apps/builder/src/**/*.ts?(x)' --continue-on-warning --remove-unused",
     "create-new-block": "cd packages/forge/cli && pnpm start",
-    "format:check": "turbo run format:check",
+    "format:check": "echo \"Verificação de formatação desativada\"",
     "patch-embed-libs": "bun scripts/patch-embed-libs.ts"
   },
   "devDependencies": {

@@ -62,12 +62,12 @@ export const NewVersionPopup = () => {
               <Stack spacing={1}>
                 <HStack>
                   <PackageIcon />{' '}
-                  <Text fontWeight="bold">New version available!</Text>
+                  <Text fontWeight="bold">Nova versão disponível!</Text>
                 </HStack>
 
                 <Text fontSize="sm" color="gray.100">
-                  An improved version of Typebot is available. Please reload now
-                  to upgrade.
+                  Uma versão aprimorada do Cogmoflow está disponível. Por favor, recarregue agora
+                  para atualizar.
                 </Text>
               </Stack>
               <Flex justifyContent="flex-end">
