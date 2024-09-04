@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { startSession } from '@typebot.io/bot-engine/startSession'
 import { env } from '@typebot.io/env'
-import { HTTPError } from 'got'
+import { HTTPError } from 'ky'
 import prisma from '@typebot.io/lib/prisma'
 import { saveStateToDatabase } from '@typebot.io/bot-engine/saveStateToDatabase'
 import { restartSession } from '@typebot.io/bot-engine/queries/restartSession'
@@ -105,9 +105,9 @@ export const startWhatsAppPreview = authenticatedProcedure
       clientSideActions,
       logs,
       visitedEdges,
+      setVariableHistory,
     } = await startSession({
       version: 2,
-      message: undefined,
       startParams: {
         isOnlyRegistering: !canSendDirectMessagesToUser,
         type: 'preview',
@@ -115,6 +115,7 @@ export const startWhatsAppPreview = authenticatedProcedure
         startFrom,
         userId: user.id,
         isStreamEnabled: false,
+        textBubbleContentFormat: 'richText',
       },
       initialSessionState: {
         whatsApp: (existingSession?.state as SessionState | undefined)
@@ -145,6 +146,7 @@ export const startWhatsAppPreview = authenticatedProcedure
           state: newSessionState,
         },
         visitedEdges,
+        setVariableHistory,
       })
     } else {
       await restartSession({
@@ -169,7 +171,7 @@ export const startWhatsAppPreview = authenticatedProcedure
           },
         })
       } catch (err) {
-        if (err instanceof HTTPError) console.log(err.response.body)
+        if (err instanceof HTTPError) console.log(await err.response.text())
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Request to Meta to send preview message failed',

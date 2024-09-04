@@ -5,11 +5,12 @@ import { clsx } from 'clsx'
 import { CustomEmbedBubble as CustomEmbedBubbleProps } from '@typebot.io/schemas'
 import { executeCode } from '@/features/blocks/logic/script/executeScript'
 import { botContainerHeight } from '@/utils/botContainerHeightSignal'
+import { InputSubmitContent } from '@/types'
 
 type Props = {
   content: CustomEmbedBubbleProps['content']
-  onTransitionEnd?: (offsetTop?: number) => void
-  onCompleted: (reply?: string) => void
+  onTransitionEnd?: (ref?: HTMLDivElement) => void
+  onCompleted: (reply?: InputSubmitContent) => void
 }
 
 let typingTimeout: NodeJS.Timeout
@@ -36,17 +37,15 @@ export const CustomEmbedBubble = (props: Props) => {
       executeCode({
         args: {
           ...props.content.waitForEventFunction.args,
-          continueFlow: props.onCompleted,
+          continueFlow: (text: string) =>
+            props.onCompleted(text ? { type: 'text', value: text } : undefined),
         },
         content: props.content.waitForEventFunction.content,
       })
 
     typingTimeout = setTimeout(() => {
       setIsTyping(false)
-      setTimeout(
-        () => props.onTransitionEnd?.(ref?.offsetTop),
-        showAnimationDuration
-      )
+      setTimeout(() => props.onTransitionEnd?.(ref), showAnimationDuration)
     }, 2000)
   })
 
@@ -63,14 +62,7 @@ export const CustomEmbedBubble = (props: Props) => {
       ref={ref}
     >
       <div class="flex w-full items-center">
-        <div
-          class="flex relative z-10 items-start typebot-host-bubble w-full"
-          style={{
-            'max-width': props.content.maxBubbleWidth
-              ? `${props.content.maxBubbleWidth}px`
-              : '100%',
-          }}
-        >
+        <div class="flex relative z-10 items-start typebot-host-bubble w-full max-w-full">
           <div
             class="flex items-center absolute px-4 py-2 bubble-typing z-10 "
             style={{

@@ -18,6 +18,9 @@ const indexConfig = {
     format: 'es',
   },
   external: ['react', 'react/jsx-runtime'],
+  watch: {
+    clearScreen: false,
+  },
   plugins: [
     resolve({ extensions }),
     babel({
@@ -27,7 +30,9 @@ const indexConfig = {
       extensions,
     }),
     typescriptPaths({ preserveExtensions: true }),
-    typescript(),
+    typescript({
+      noEmitOnError: !process.env.ROLLUP_WATCH,
+    }),
     terser({ format: { preamble } }),
   ],
 }

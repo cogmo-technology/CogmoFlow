@@ -19,7 +19,7 @@ export const MultipleChoicesForm = (props: Props) => {
   const [selectedItemIds, setSelectedItemIds] = createSignal<string[]>([])
 
   onMount(() => {
-    if (!isMobile() && inputRef) inputRef.focus()
+    if (!isMobile() && inputRef) inputRef.focus({ preventScroll: true })
   })
 
   const handleClick = (itemId: string) => {
@@ -39,6 +39,7 @@ export const MultipleChoicesForm = (props: Props) => {
 
   const handleSubmit = () =>
     props.onSubmit({
+      type: 'text',
       value: selectedItemIds()
         .map(
           (selectedItemId) =>

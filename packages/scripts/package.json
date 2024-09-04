@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "playground": "SKIP_ENV_CHECK=true dotenv -e ./.env.local -- tsx playground.ts",
-    "db:cleanDatabase": "tsx cleanDatabase.ts",
+    "db:cleanDatabase": "SKIP_ENV_CHECK=true tsx cleanDatabase.ts",
     "db:backup": "tsx backupDatabase.ts",
     "db:restore": "tsx restoreDatabase.ts",
     "db:setCustomPlan": "tsx setCustomPlan.ts",
@@ -20,7 +20,7 @@
     "insertUsersInBrevoList": "tsx insertUsersInBrevoList.ts",
     "getUsage": "tsx getUsage.ts",
     "suspendWorkspace": "tsx suspendWorkspace.ts",
-    "destroyUser": "tsx destroyUser.ts",
+    "destroyUser": "SKIP_ENV_CHECK=true dotenv -e ./.env.production -- tsx destroyUser.ts",
     "updateTypebot": "tsx updateTypebot.ts",
     "updateWorkspace": "tsx updateWorkspace.ts",
     "inspectTypebot": "tsx inspectTypebot.ts",
@@ -42,11 +42,11 @@
     "@types/papaparse": "5.3.7",
     "@types/prompts": "2.4.4",
     "deep-object-diff": "1.1.9",
-    "got": "12.6.0",
+    "ky": "1.2.4",
     "prompts": "2.4.2",
     "stripe": "12.13.0",
-    "tsx": "3.12.7",
-    "typescript": "5.3.2",
+    "tsx": "4.6.2",
+    "typescript": "5.4.5",
     "zod": "3.22.4"
   },
   "dependencies": {

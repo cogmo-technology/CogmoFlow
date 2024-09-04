@@ -1,7 +1,7 @@
 import { safeStringify } from '@typebot.io/lib/safeStringify'
 import { isDefined, isNotDefined } from '@typebot.io/lib/utils'
-import { parseGuessedValueType } from './parseGuessedValueType'
 import { Variable, VariableWithValue } from './types'
+import { createCodeRunner } from './codeRunners'
 
 export type ParseVariablesOptions = {
   fieldToParse?: 'value' | 'id'
@@ -72,12 +72,11 @@ const evaluateInlineCode = (
   code: string,
   { variables }: { variables: Variable[] }
 ) => {
-  const evaluating = parseVariables(variables, { fieldToParse: 'id' })(
-    code.includes('return ') ? code : `return ${code}`
-  )
   try {
-    const func = Function(...variables.map((v) => v.id), evaluating)
-    return func(...variables.map((v) => parseGuessedValueType(v.value)))
+    const body = parseVariables(variables, { fieldToParse: 'id' })(code)
+    return createCodeRunner({ variables })(
+      body.includes('return ') ? body : `return ${body}`
+    )
   } catch (err) {
     return parseVariables(variables)(code)
   }
@@ -88,6 +87,7 @@ type VariableToParseInformation = {
   endIndex: number
   textToReplace: string
   value: string
+  variableId?: string
 }
 
 export const getVariablesToParseInfoInText = (
@@ -97,7 +97,7 @@ export const getVariablesToParseInfoInText = (
     takeLatestIfList,
   }: { variables: Variable[]; takeLatestIfList?: boolean }
 ): VariableToParseInformation[] => {
-  const variablesToParseInfo: VariableToParseInformation[] = []
+  const inlineVarsParseInfo: VariableToParseInformation[] = []
   const inlineCodeMatches = [...text.matchAll(inlineCodeRegex)]
   inlineCodeMatches.forEach((match) => {
     if (isNotDefined(match.index) || !match[0].length) return
@@ -105,7 +105,7 @@ export const getVariablesToParseInfoInText = (
     const evaluatedValue = evaluateInlineCode(inlineCodeToEvaluate, {
       variables,
     })
-    variablesToParseInfo.push({
+    inlineVarsParseInfo.push({
       startIndex: match.index,
       endIndex: match.index + match[0].length,
       textToReplace: match[0],
@@ -117,19 +117,20 @@ export const getVariablesToParseInfoInText = (
         ) ?? '',
     })
   })
-  const textWithInlineCodeParsed = text.replace(
-    inlineCodeRegex,
-    (_full, inlineCodeToEvaluate) =>
-      evaluateInlineCode(inlineCodeToEvaluate, { variables })
-  )
-  const variableMatches = [...textWithInlineCodeParsed.matchAll(variableRegex)]
+  const variablesParseInfo: VariableToParseInformation[] = []
+  const variableMatches = [...text.matchAll(variableRegex)]
   variableMatches.forEach((match) => {
     if (isNotDefined(match.index) || !match[0].length) return
+    const isPartOfInlineCode = inlineVarsParseInfo.some(
+      (inVar) =>
+        match.index >= inVar.startIndex && match.index <= inVar.endIndex
+    )
+    if (isPartOfInlineCode) return
     const matchedVarName = match[1] ?? match[3]
     const variable = variables.find((variable) => {
-      return matchedVarName === variable.name && isDefined(variable.value)
+      return matchedVarName === variable.name
     }) as VariableWithValue | undefined
-    variablesToParseInfo.push({
+    variablesParseInfo.push({
       startIndex: match.index,
       endIndex: match.index + match[0].length,
       textToReplace: match[0],
@@ -139,9 +140,12 @@ export const getVariablesToParseInfoInText = (
             ? variable?.value[variable?.value.length - 1]
             : variable?.value
         ) ?? '',
+      variableId: variable?.id,
     })
   })
-  return variablesToParseInfo.sort((a, b) => a.startIndex - b.startIndex)
+  return inlineVarsParseInfo
+    .concat(variablesParseInfo)
+    .sort((a, b) => a.startIndex - b.startIndex)
 }
 
 const parseVariableValueInJson = (value: VariableWithValue['value']) => {

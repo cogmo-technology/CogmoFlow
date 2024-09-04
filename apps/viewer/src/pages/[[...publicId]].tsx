@@ -7,8 +7,11 @@ import { TypebotPageProps, TypebotPageV2 } from '@/components/TypebotPageV2'
 import { TypebotPageV3, TypebotV3PageProps } from '@/components/TypebotPageV3'
 import { env } from '@typebot.io/env'
 import prisma from '@typebot.io/lib/prisma'
-import { defaultTheme } from '@typebot.io/schemas/features/typebot/theme/constants'
 import { defaultSettings } from '@typebot.io/schemas/features/typebot/settings/constants'
+import {
+  defaultBackgroundColor,
+  defaultBackgroundType,
+} from '@typebot.io/schemas/features/typebot/theme/constants'
 
 // Browsers that doesn't support ES modules and/or web components
 const incompatibleBrowsers = [
@@ -42,6 +45,13 @@ export const getServerSideProps: GetServerSideProps = async (
   const { host, forwardedHost } = getHost(context.req)
   log(`host: ${host}`)
   log(`forwardedHost: ${forwardedHost}`)
+  const protocol =
+    context.req.headers['x-forwarded-proto'] === 'https' ||
+    (context.req.socket as unknown as { encrypted: boolean }).encrypted
+      ? 'https'
+      : 'http'
+
+  log(`Request protocol: ${protocol}`)
   try {
     if (!host) return { props: {} }
     const viewerUrls = env.NEXT_PUBLIC_VIEWER_URL
@@ -68,7 +78,8 @@ export const getServerSideProps: GetServerSideProps = async (
       props: {
         publishedTypebot,
         incompatibleBrowser,
-        url: `https://${forwardedHost ?? host}${pathname}`,
+        isMatchingViewerUrl,
+        url: `${protocol}://${forwardedHost ?? host}${pathname}`,
       },
     }
   } catch (err) {
@@ -77,7 +88,7 @@ export const getServerSideProps: GetServerSideProps = async (
   return {
     props: {
       incompatibleBrowser,
-      url: `https://${forwardedHost ?? host}${pathname}`,
+      url: `${protocol}://${forwardedHost ?? host}${pathname}`,
     },
   }
 }
@@ -109,9 +120,10 @@ const getTypebotFromPublicId = async (publicId?: string) => {
     ? ({
         name: publishedTypebot.typebot.name,
         publicId: publishedTypebot.typebot.publicId ?? null,
-        background:
-          publishedTypebot.theme.general?.background ??
-          defaultTheme.general.background,
+        background: publishedTypebot.theme.general?.background ?? {
+          type: defaultBackgroundType,
+          content: defaultBackgroundColor,
+        },
         isHideQueryParamsEnabled:
           publishedTypebot.settings.general?.isHideQueryParamsEnabled ??
           defaultSettings.general.isHideQueryParamsEnabled,
@@ -156,9 +168,10 @@ const getTypebotFromCustomDomain = async (customDomain: string) => {
     ? ({
         name: publishedTypebot.typebot.name,
         publicId: publishedTypebot.typebot.publicId ?? null,
-        background:
-          publishedTypebot.theme.general?.background ??
-          defaultTheme.general.background,
+        background: publishedTypebot.theme.general?.background ?? {
+          type: defaultBackgroundType,
+          content: defaultBackgroundColor,
+        },
         isHideQueryParamsEnabled:
           publishedTypebot.settings.general?.isHideQueryParamsEnabled ??
           defaultSettings.general.isHideQueryParamsEnabled,
@@ -191,6 +204,7 @@ const App = ({
   isIE: boolean
   customHeadCode: string | null
   url: string
+  isMatchingViewerUrl?: boolean
   publishedTypebot:
     | TypebotPageProps['publishedTypebot']
     | Pick<
@@ -226,6 +240,7 @@ const App = ({
   ) : (
     <TypebotPageV3
       url={props.url}
+      isMatchingViewerUrl={props.isMatchingViewerUrl}
       name={publishedTypebot.name}
       publicId={publishedTypebot.publicId}
       isHideQueryParamsEnabled={
@@ -233,7 +248,10 @@ const App = ({
         defaultSettings.general.isHideQueryParamsEnabled
       }
       background={
-        publishedTypebot.background ?? defaultTheme.general.background
+        publishedTypebot.background ?? {
+          type: defaultBackgroundType,
+          content: defaultBackgroundColor,
+        }
       }
       metadata={publishedTypebot.metadata ?? {}}
       font={publishedTypebot.font}

@@ -1,10 +1,14 @@
 import { Prisma, PrismaClient } from '@typebot.io/prisma'
-import { Block, Typebot } from '@typebot.io/schemas'
-import { deleteFilesFromBucket } from '@typebot.io/lib/s3/deleteFilesFromBucket'
-import { InputBlockType } from '@typebot.io/schemas/features/blocks/inputs/constants'
+import { Typebot } from '@typebot.io/schemas'
+import { isDefined } from '@typebot.io/lib'
+import {
+  removeAllObjectsFromResult,
+  removeObjectsFromResult,
+} from '@typebot.io/lib/s3/removeObjectsRecursively'
+import { env } from '../env/env'
 
 type ArchiveResultsProps = {
-  typebot: Pick<Typebot, 'groups'>
+  typebot: Pick<Typebot, 'groups' | 'workspaceId' | 'id'>
   resultsFilter?: Omit<Prisma.ResultWhereInput, 'typebotId'> & {
     typebotId: string
   }
@@ -14,10 +18,6 @@ export const archiveResults =
   (prisma: PrismaClient) =>
   async ({ typebot, resultsFilter }: ArchiveResultsProps) => {
     const batchSize = 100
-    const fileUploadBlockIds = typebot.groups
-      .flatMap<Block>((group) => group.blocks)
-      .filter((block) => block.type === InputBlockType.FILE)
-      .map((block) => block.id)
 
     let currentTotalResults = 0
 
@@ -32,6 +32,8 @@ export const archiveResults =
 
     let progress = 0
 
+    const isDeletingAllResults = resultsFilter?.id === undefined
+
     do {
       progress += batchSize
       console.log(`Archiving ${progress} / ${resultsCount} results...`)
@@ -42,6 +44,7 @@ export const archiveResults =
         },
         select: {
           id: true,
+          lastChatSessionId: true,
         },
         take: batchSize,
       })
@@ -51,19 +54,6 @@ export const archiveResults =
       currentTotalResults = resultsToDelete.length
 
       const resultIds = resultsToDelete.map((result) => result.id)
-
-      if (fileUploadBlockIds.length > 0) {
-        const filesToDelete = await prisma.answer.findMany({
-          where: {
-            resultId: { in: resultIds },
-            blockId: { in: fileUploadBlockIds },
-          },
-        })
-        if (filesToDelete.length > 0)
-          await deleteFilesFromBucket({
-            urls: filesToDelete.flatMap((a) => a.content.split(', ')),
-          })
-      }
 
       await prisma.$transaction([
         prisma.log.deleteMany({
@@ -76,6 +66,30 @@ export const archiveResults =
             resultId: { in: resultIds },
           },
         }),
+        prisma.answerV2.deleteMany({
+          where: {
+            resultId: { in: resultIds },
+          },
+        }),
+        prisma.visitedEdge.deleteMany({
+          where: {
+            resultId: { in: resultIds },
+          },
+        }),
+        prisma.setVariableHistoryItem.deleteMany({
+          where: {
+            resultId: { in: resultIds },
+          },
+        }),
+        prisma.chatSession.deleteMany({
+          where: {
+            id: {
+              in: resultsToDelete
+                .map((r) => r.lastChatSessionId)
+                .filter(isDefined),
+            },
+          },
+        }),
         prisma.result.updateMany({
           where: {
             id: { in: resultIds },
@@ -86,7 +100,21 @@ export const archiveResults =
           },
         }),
       ])
+      if (!isDeletingAllResults && env.S3_BUCKET) {
+        await removeObjectsFromResult({
+          workspaceId: typebot.workspaceId,
+          resultIds: resultIds,
+          typebotId: typebot.id,
+        })
+      }
     } while (currentTotalResults >= batchSize)
+
+    if (isDeletingAllResults && env.S3_BUCKET) {
+      await removeAllObjectsFromResult({
+        workspaceId: typebot.workspaceId,
+        typebotId: typebot.id,
+      })
+    }
 
     return { success: true }
   }

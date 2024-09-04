@@ -3,7 +3,6 @@ import { ForgedBlock } from './types'
 
 export const forgedBlockIds = [
   'openai',
-  'zemantic-ai',
   'cal-com',
   'chat-node',
   'qr-code',
@@ -13,4 +12,7 @@ export const forgedBlockIds = [
   'anthropic',
   'together-ai',
   'open-router',
+  'nocodb',
+  'segment',
+  'groq',
 ] as const satisfies ForgedBlock['type'][]

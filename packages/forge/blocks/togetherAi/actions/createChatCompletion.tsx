@@ -3,8 +3,8 @@ import { auth } from '../auth'
 import { parseChatCompletionOptions } from '@typebot.io/openai-block/shared/parseChatCompletionOptions'
 import { getChatCompletionSetVarIds } from '@typebot.io/openai-block/shared/getChatCompletionSetVarIds'
 import { getChatCompletionStreamVarId } from '@typebot.io/openai-block/shared/getChatCompletionStreamVarId'
-import { runChatCompletion } from '@typebot.io/openai-block/shared/runChatCompletion'
-import { runChatCompletionStream } from '@typebot.io/openai-block/shared/runChatCompletionStream'
+import { runOpenAIChatCompletion } from '@typebot.io/openai-block/shared/runOpenAIChatCompletion'
+import { runOpenAIChatCompletionStream } from '@typebot.io/openai-block/shared/runOpenAIChatCompletionStream'
 import { defaultTogetherOptions } from '../constants'
 
 export const createChatCompletion = createAction({
@@ -13,6 +13,7 @@ export const createChatCompletion = createAction({
   options: parseChatCompletionOptions({
     modelHelperText:
       'You can find the list of all the models available [here](https://docs.together.ai/docs/inference-models#chat-models). Copy the model string for API.',
+    defaultTemperature: defaultTogetherOptions.temperature,
   }),
   turnableInto: [
     {
@@ -34,20 +35,23 @@ export const createChatCompletion = createAction({
         ),
       }),
     },
+    { blockId: 'groq' },
   ],
   getSetVariableIds: getChatCompletionSetVarIds,
   run: {
     server: (params) =>
-      runChatCompletion({
+      runOpenAIChatCompletion({
         ...params,
         config: { baseUrl: defaultTogetherOptions.baseUrl },
       }),
     stream: {
       getStreamVariableId: getChatCompletionStreamVarId,
-      run: (params) =>
-        runChatCompletionStream({
+      run: async (params) =>
+        runOpenAIChatCompletionStream({
           ...params,
-          config: { baseUrl: defaultTogetherOptions.baseUrl },
+          config: {
+            baseUrl: defaultTogetherOptions.baseUrl,
+          },
         }),
     },
   },
