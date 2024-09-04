@@ -2,7 +2,7 @@ import { createAction, option } from '@typebot.io/forge'
 import { auth } from '../auth'
 import { baseUrl } from '../constants'
 import { ModelsResponse, VoicesResponse } from '../type'
-import got, { HTTPError } from 'got'
+import got, { HTTPError } from 'ky'
 import { uploadFileToBucket } from '@typebot.io/lib/s3/uploadFileToBucket'
 import { createId } from '@typebot.io/lib/createId'
 
@@ -24,7 +24,6 @@ export const convertTextToSpeech = createAction({
       fetcher: 'fetchModels',
       label: 'Model',
       placeholder: 'Select a model',
-      defaultValue: 'eleven_monolingual_v1',
     }),
     saveUrlInVariableId: option.string.layout({
       label: 'Save audio URL in variable',
@@ -38,6 +37,8 @@ export const convertTextToSpeech = createAction({
     {
       id: 'fetchVoices',
       fetch: async ({ credentials }) => {
+        if (!credentials?.apiKey) return []
+
         const response = await got
           .get(baseUrl + '/v1/voices', {
             headers: {
@@ -56,6 +57,8 @@ export const convertTextToSpeech = createAction({
     {
       id: 'fetchModels',
       fetch: async ({ credentials }) => {
+        if (!credentials?.apiKey) return []
+
         const response = await got
           .get(baseUrl + '/v1/models', {
             headers: {
@@ -92,11 +95,12 @@ export const convertTextToSpeech = createAction({
               model_id: options.modelId,
               text: options.text,
             },
+            timeout: false,
           })
-          .buffer()
+          .arrayBuffer()
 
         const url = await uploadFileToBucket({
-          file: response,
+          file: Buffer.from(response),
           key: `tmp/elevenlabs/audio/${createId() + createId()}.mp3`,
           mimeType: 'audio/mpeg',
         })
@@ -107,9 +111,14 @@ export const convertTextToSpeech = createAction({
           return logs.add({
             status: 'error',
             description: err.message,
-            details: err.response.body,
+            details: await err.response.text(),
           })
         }
+        logs.add({
+          status: 'error',
+          description: 'An error occured while converting the text to speech',
+          details: JSON.stringify(err, null, 2),
+        })
       }
     },
   },

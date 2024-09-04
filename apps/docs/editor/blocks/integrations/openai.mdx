@@ -47,16 +47,18 @@ As you can see, the code block expects the body of the Javascript function. You 
 
 If you'd like to set variables directly in this code block, you can use the [`setVariable` function](../logic/script#setvariable-function).
 
+<Warning>
+  A function is executed on the server so it comes with [some limitations listed
+  here](../logic/script#limitations-on-scripts-executed-on-server).
+</Warning>
+
 ## Ask assistant
 
 This action allows you to talk with your [OpenAI assistant](https://platform.openai.com/assistants). All you have to do is to provide its ID.
 
-<Frame>
-  <img
-    src="/images/blocks/integrations/openai/ask-assistant.png"
-    alt="OpenAI ask assistant settings"
-  />
-</Frame>
+In order for your block to remember the conversation history, you need to provide a `Thread ID` variable. If the variable is empty, it will create a new thread and automatically save the new thread ID in the variable.
+
+<LoomVideo id="daa20fcc5984472a875a3ad4d3fc2a3a" />
 
 ### Functions
 
@@ -72,6 +74,24 @@ The generated audio URLs are temporary and expire after 7 days. If you need to s
 
 <LoomVideo id="ccca6cbf16ed4d01b513836775db06a3" />
 
+## Create transcription
+
+This action allows you to transcribe a audio URL into text.
+
+## Generate variables
+
+This action allows you to set variables based on a prompt.
+
+Let's you want to want to extract a specific bit of information based on user's last message. You could use this block action to extract for example his name. To do that you could add the following prompt:
+
+```txt
+Extract user's information from user's last message: "{{Last message}}"
+```
+
+This you could provide for example the following variables: `Name`, `Email`
+
+If the `Last Message` variable is set to "My name is John and my email is john@gmail.com", then the `Name` and `Email` variables will be set to `John` and `john@gmail.com` respectively.
+
 ## Using Multiple Open AI Blocks: Tips and Tricks
 
 In this video, I discuss some important things to keep in mind when using multiple Open AI blocks consecutively. I provide an example where we ask the user for a topic, generate a summary, and display a list of authors.
@@ -81,6 +101,18 @@ I explain that streaming messages is not possible when they are prefixed or suff
 I also demonstrate how formatting can be affected by the presence of text before a message. Watch this video to learn how to optimize your use of multiple Open AI blocks.
 
 <LoomVideo id="35dc8af6b9244762acc4a5acf275fb43" />
+
+## Vision support
+
+`Create Chat Message` and `Ask Assistant` blocks support vision. This means that Typebot automatically detects images URL in any user message provided to OpenAI and parse it. The URL needs to be isolated from the rest of the text message to be properly detected. Here is an example of a message with an image URL:
+
+If the selected model is [not compatible with vision](https://platform.openai.com/docs/models), the image URL will be parsed as a plain text message.
+
+```
+What's in this picture?
+
+https://domain.com/image.png
+```
 
 ## Troobleshooting
 

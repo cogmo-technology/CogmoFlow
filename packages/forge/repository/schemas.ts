@@ -19,12 +19,15 @@ import { qrCodeBlock } from '@typebot.io/qrcode-block'
 import { qrCodeBlockSchema } from '@typebot.io/qrcode-block/schemas'
 import { togetherAiBlock } from '@typebot.io/together-ai-block'
 import { togetherAiBlockSchema } from '@typebot.io/together-ai-block/schemas'
-import { zemanticAiBlock } from '@typebot.io/zemantic-ai-block'
-import { zemanticAiBlockSchema } from '@typebot.io/zemantic-ai-block/schemas'
+import { nocodbBlock } from '@typebot.io/nocodb-block'
+import { nocodbBlockSchema } from '@typebot.io/nocodb-block/schemas'
+import { segmentBlock } from '@typebot.io/segment-block'
+import { segmentBlockSchema } from '@typebot.io/segment-block/schemas'
+import { groqBlock } from '@typebot.io/groq-block'
+import { groqBlockSchema } from '@typebot.io/groq-block/schemas'
 
 export const forgedBlockSchemas = {
   [openAIBlock.id]: openAIBlockSchema,
-  [zemanticAiBlock.id]: zemanticAiBlockSchema,
   [calComBlock.id]: calComBlockSchema,
   [chatNodeBlock.id]: chatNodeBlockSchema,
   [qrCodeBlock.id]: qrCodeBlockSchema,
@@ -34,4 +37,7 @@ export const forgedBlockSchemas = {
   [anthropicBlock.id]: anthropicBlockSchema,
   [togetherAiBlock.id]: togetherAiBlockSchema,
   [openRouterBlock.id]: openRouterBlockSchema,
+  [nocodbBlock.id]: nocodbBlockSchema,
+  [segmentBlock.id]: segmentBlockSchema,
+  [groqBlock.id]: groqBlockSchema,
 }

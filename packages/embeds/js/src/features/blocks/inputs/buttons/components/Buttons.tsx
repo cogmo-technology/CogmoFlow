@@ -18,11 +18,14 @@ export const Buttons = (props: Props) => {
   const [filteredItems, setFilteredItems] = createSignal(props.defaultItems)
 
   onMount(() => {
-    if (!isMobile() && inputRef) inputRef.focus()
+    if (!isMobile() && inputRef) inputRef.focus({ preventScroll: true })
   })
 
   const handleClick = (itemIndex: number) =>
-    props.onSubmit({ value: filteredItems()[itemIndex].content ?? '' })
+    props.onSubmit({
+      type: 'text',
+      value: filteredItems()[itemIndex].content ?? '',
+    })
 
   const filterItems = (inputValue: string) => {
     setFilteredItems(

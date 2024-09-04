@@ -2,7 +2,7 @@ import prisma from '@typebot.io/lib/prisma'
 import { authenticatedProcedure } from '@/helpers/server/trpc'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import got from 'got'
+import ky, { HTTPError } from 'ky'
 import { env } from '@typebot.io/env'
 import { isWriteWorkspaceForbidden } from '@/features/workspace/helpers/isWriteWorkspaceForbidden'
 
@@ -47,10 +47,17 @@ export const deleteCustomDomain = authenticatedProcedure
       await deleteDomainOnVercel(name)
     } catch (error) {
       console.error(error)
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to delete domain on Vercel',
-      })
+      if (error instanceof HTTPError)
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete domain on Vercel',
+          cause: await error.response.text(),
+        })
+      else
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete domain on Vercel',
+        })
     }
     await prisma.customDomain.deleteMany({
       where: {
@@ -63,7 +70,9 @@ export const deleteCustomDomain = authenticatedProcedure
   })
 
 const deleteDomainOnVercel = (name: string) =>
-  got.delete({
-    url: `https://api.vercel.com/v9/projects/${env.NEXT_PUBLIC_VERCEL_VIEWER_PROJECT_NAME}/domains/${name}?teamId=${env.VERCEL_TEAM_ID}`,
-    headers: { Authorization: `Bearer ${env.VERCEL_TOKEN}` },
-  })
+  ky.delete(
+    `https://api.vercel.com/v9/projects/${env.NEXT_PUBLIC_VERCEL_VIEWER_PROJECT_NAME}/domains/${name}?teamId=${env.VERCEL_TEAM_ID}`,
+    {
+      headers: { Authorization: `Bearer ${env.VERCEL_TOKEN}` },
+    }
+  )

@@ -1,6 +1,10 @@
 import { isCancel, text, confirm } from '@clack/prompts'
-import { Plan, PrismaClient } from '@typebot.io/prisma'
+import { PrismaClient } from '@typebot.io/prisma'
 import { writeFileSync } from 'fs'
+import {
+  removeObjectsFromUser,
+  removeObjectsFromWorkspace,
+} from '@typebot.io/lib/s3/removeObjectsRecursively'
 
 export const destroyUser = async (userEmail?: string) => {
   const prisma = new PrismaClient()
@@ -34,17 +38,6 @@ export const destroyUser = async (userEmail?: string) => {
 
   console.log(`Found ${workspaces.length} workspaces`)
 
-  if (workspaces.some((w) => w.plan !== Plan.FREE)) {
-    console.log(
-      `Some workspaces have a plan other than FREE. Something is wrong. Logging and exiting...`
-    )
-    writeFileSync(
-      'logs/workspaces-issue.json',
-      JSON.stringify(workspaces, null, 2)
-    )
-    return
-  }
-
   if (
     workspaces.some((w) =>
       w.members.some((m) => m.user.email && m.user.email !== email)
@@ -60,7 +53,18 @@ export const destroyUser = async (userEmail?: string) => {
     return
   }
 
-  console.log('All workspaces have a FREE plan')
+  console.log(
+    'Workspaces:',
+    JSON.stringify(
+      workspaces.map((w) => ({
+        id: w.id,
+        plan: w.plan,
+        members: w.members,
+      })),
+      null,
+      2
+    )
+  )
 
   const proceed = await confirm({ message: 'Proceed?' })
   if (!proceed || typeof proceed !== 'boolean') {
@@ -69,13 +73,15 @@ export const destroyUser = async (userEmail?: string) => {
   }
 
   for (const workspace of workspaces) {
-    const hasResults = workspace.typebots.some((t) => t.results.length > 0)
-    if (hasResults) {
+    const totalResults = workspace.typebots.reduce(
+      (acc, typebot) => acc + typebot.results.length,
+      0
+    )
+
+    if (totalResults > 0) {
       console.log(
-        `Workspace ${workspace.name} has results. Deleting results first...`,
-        workspace.typebots.filter((t) => t.results.length > 0)
+        `Workspace ${workspace.name} has ${totalResults} results. We should delete them first...`
       )
-      console.log(JSON.stringify({ members: workspace.members }, null, 2))
       const proceed = await confirm({ message: 'Proceed?' })
       if (!proceed || typeof proceed !== 'boolean') {
         console.log('Aborting')
@@ -90,9 +96,11 @@ export const destroyUser = async (userEmail?: string) => {
       }
     }
     await prisma.workspace.delete({ where: { id: workspace.id } })
+    await removeObjectsFromWorkspace(workspace.id)
   }
 
   const user = await prisma.user.delete({ where: { email } })
+  await removeObjectsFromUser(user.id)
 
-  console.log(`Deleted user ${JSON.stringify(user, null, 2)}`)
+  console.log(`User deleted.`, JSON.stringify(user, null, 2))
 }

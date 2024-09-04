@@ -18,10 +18,6 @@ export const UrlInput = (props: Props) => {
   let inputRef: HTMLInputElement | HTMLTextAreaElement | undefined
 
   const handleInput = (inputValue: string) => {
-    if (!inputValue.startsWith('https://'))
-      return inputValue === 'https:/'
-        ? undefined
-        : setInputValue(`https://${inputValue}`)
     setInputValue(inputValue)
   }
 
@@ -29,7 +25,10 @@ export const UrlInput = (props: Props) => {
     inputRef?.value !== '' && inputRef?.reportValidity()
 
   const submit = () => {
-    if (checkIfInputIsValid()) props.onSubmit({ value: inputValue() })
+    if (inputRef && !inputRef?.value.startsWith('http'))
+      inputRef.value = `https://${inputRef.value}`
+    if (checkIfInputIsValid())
+      props.onSubmit({ type: 'text', value: inputRef?.value ?? inputValue() })
     else inputRef?.focus()
   }
 
@@ -38,7 +37,10 @@ export const UrlInput = (props: Props) => {
   }
 
   onMount(() => {
-    if (!isMobile() && inputRef) inputRef.focus()
+    if (!isMobile() && inputRef)
+      inputRef.focus({
+        preventScroll: true,
+      })
     window.addEventListener('message', processIncomingEvent)
   })
 
@@ -54,27 +56,24 @@ export const UrlInput = (props: Props) => {
 
   return (
     <div
-      class={'flex items-end justify-between pr-2 typebot-input w-full'}
-      data-testid="input"
-      style={{
-        'max-width': '350px',
-      }}
+      class="typebot-input-form flex w-full gap-2 items-end max-w-[350px]"
       onKeyDown={submitWhenEnter}
     >
-      <ShortTextInput
-        ref={inputRef as HTMLInputElement}
-        value={inputValue()}
-        placeholder={
-          props.block.options?.labels?.placeholder ??
-          defaultUrlInputOptions.labels.placeholder
-        }
-        onInput={handleInput}
-        type="url"
-        autocomplete="url"
-      />
-      <SendButton type="button" class="my-2 ml-2" on:click={submit}>
-        {props.block.options?.labels?.button ??
-          defaultUrlInputOptions.labels.button}
+      <div class={'flex typebot-input w-full'}>
+        <ShortTextInput
+          ref={inputRef as HTMLInputElement}
+          value={inputValue()}
+          placeholder={
+            props.block.options?.labels?.placeholder ??
+            defaultUrlInputOptions.labels.placeholder
+          }
+          onInput={handleInput}
+          type="url"
+          autocomplete="url"
+        />
+      </div>
+      <SendButton type="button" class="h-[56px]" on:click={submit}>
+        {props.block.options?.labels?.button}
       </SendButton>
     </div>
   )

@@ -12,8 +12,7 @@ export const executeScript = async (
   block: ScriptBlock
 ): Promise<ExecuteLogicResponse> => {
   const { variables } = state.typebotsQueue[0].typebot
-  if (!block.options?.content || state.whatsApp)
-    return { outgoingEdgeId: block.outgoingEdgeId }
+  if (!block.options?.content) return { outgoingEdgeId: block.outgoingEdgeId }
 
   const isExecutedOnClient =
     block.options.isExecutedOnClient ?? defaultScriptOptions.isExecutedOnClient
@@ -24,14 +23,25 @@ export const executeScript = async (
       body: block.options.content,
     })
 
-    const newSessionState = newVariables
-      ? updateVariablesInSession(state)(newVariables)
-      : state
+    const updateVarResults = newVariables
+      ? updateVariablesInSession({
+          newVariables,
+          state,
+          currentBlockId: block.id,
+        })
+      : undefined
+
+    let newSessionState = state
+
+    if (updateVarResults) {
+      newSessionState = updateVarResults.updatedState
+    }
 
     return {
       outgoingEdgeId: block.outgoingEdgeId,
       logs: error ? [{ status: 'error', description: error }] : [],
       newSessionState,
+      newSetVariableHistory: updateVarResults?.newSetVariableHistory,
     }
   }
 

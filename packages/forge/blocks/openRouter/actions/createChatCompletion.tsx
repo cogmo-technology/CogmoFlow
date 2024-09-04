@@ -3,10 +3,10 @@ import { auth } from '../auth'
 import { parseChatCompletionOptions } from '@typebot.io/openai-block/shared/parseChatCompletionOptions'
 import { getChatCompletionSetVarIds } from '@typebot.io/openai-block/shared/getChatCompletionSetVarIds'
 import { getChatCompletionStreamVarId } from '@typebot.io/openai-block/shared/getChatCompletionStreamVarId'
-import { runChatCompletion } from '@typebot.io/openai-block/shared/runChatCompletion'
-import { runChatCompletionStream } from '@typebot.io/openai-block/shared/runChatCompletionStream'
+import { runOpenAIChatCompletion } from '@typebot.io/openai-block/shared/runOpenAIChatCompletion'
+import { runOpenAIChatCompletionStream } from '@typebot.io/openai-block/shared/runOpenAIChatCompletionStream'
 import { defaultOpenRouterOptions } from '../constants'
-import { got } from 'got'
+import ky from 'ky'
 import { ModelsResponse } from '../types'
 
 export const createChatCompletion = createAction({
@@ -15,6 +15,9 @@ export const createChatCompletion = createAction({
   turnableInto: [
     {
       blockId: 'openai',
+    },
+    {
+      blockId: 'groq',
     },
     {
       blockId: 'together-ai',
@@ -35,6 +38,7 @@ export const createChatCompletion = createAction({
   ],
   options: parseChatCompletionOptions({
     modelFetchId: 'fetchModels',
+    defaultTemperature: defaultOpenRouterOptions.temperature,
   }),
   getSetVariableIds: getChatCompletionSetVarIds,
   fetchers: [
@@ -42,7 +46,7 @@ export const createChatCompletion = createAction({
       id: 'fetchModels',
       dependencies: [],
       fetch: async () => {
-        const response = await got
+        const response = await ky
           .get(defaultOpenRouterOptions.baseUrl + '/models')
           .json<ModelsResponse>()
 
@@ -55,16 +59,18 @@ export const createChatCompletion = createAction({
   ],
   run: {
     server: (params) =>
-      runChatCompletion({
+      runOpenAIChatCompletion({
         ...params,
         config: { baseUrl: defaultOpenRouterOptions.baseUrl },
       }),
     stream: {
       getStreamVariableId: getChatCompletionStreamVarId,
-      run: (params) =>
-        runChatCompletionStream({
+      run: async (params) =>
+        runOpenAIChatCompletionStream({
           ...params,
-          config: { baseUrl: defaultOpenRouterOptions.baseUrl },
+          config: {
+            baseUrl: defaultOpenRouterOptions.baseUrl,
+          },
         }),
     },
   },

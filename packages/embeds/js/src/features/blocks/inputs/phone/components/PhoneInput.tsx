@@ -63,13 +63,15 @@ export const PhoneInput = (props: PhoneInputProps) => {
     const selectedCountryDialCode = phoneCountries.find(
       (country) => country.code === selectedCountryCode()
     )?.dial_code
-    if (checkIfInputIsValid())
+    if (checkIfInputIsValid()) {
+      const val = inputRef?.value ?? inputValue()
       props.onSubmit({
-        value: inputValue().startsWith('+')
-          ? inputValue()
-          : `${selectedCountryDialCode ?? ''}${inputValue()}`,
+        type: 'text',
+        value: val.startsWith('+')
+          ? val
+          : `${selectedCountryDialCode ?? ''}${val}`,
       })
-    else inputRef?.focus()
+    } else inputRef?.focus()
   }
 
   const submitWhenEnter = (e: KeyboardEvent) => {
@@ -89,7 +91,7 @@ export const PhoneInput = (props: PhoneInputProps) => {
   }
 
   onMount(() => {
-    if (!isMobile() && inputRef) inputRef.focus()
+    if (!isMobile() && inputRef) inputRef.focus({ preventScroll: true })
     window.addEventListener('message', processIncomingEvent)
   })
 
@@ -105,14 +107,10 @@ export const PhoneInput = (props: PhoneInputProps) => {
 
   return (
     <div
-      class={'flex items-end justify-between pr-2 typebot-input'}
-      data-testid="input"
-      style={{
-        'max-width': '400px',
-      }}
+      class="typebot-input-form flex w-full gap-2 items-end max-w-[350px]"
       onKeyDown={submitWhenEnter}
     >
-      <div class="flex">
+      <div class={'flex typebot-input w-full'}>
         <div class="relative typebot-country-select flex justify-center items-center">
           <div class="pl-2 pr-1 flex items-center gap-2">
             <span>
@@ -155,9 +153,8 @@ export const PhoneInput = (props: PhoneInputProps) => {
           autofocus={!isMobile()}
         />
       </div>
-
-      <SendButton type="button" class="my-2 ml-2" on:click={submit}>
-        {props.labels?.button ?? defaultPhoneInputOptions.labels.button}
+      <SendButton type="button" class="h-[56px]" on:click={submit}>
+        {props.labels?.button}
       </SendButton>
     </div>
   )

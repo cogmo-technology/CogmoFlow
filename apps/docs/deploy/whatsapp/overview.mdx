@@ -26,7 +26,7 @@ WhatsApp environment have some limitations that you need to keep in mind when bu
 
   - Payment input block
   - Chatwoot block
-  - Script block
+  - Script or Set Variable block with `Execute on client` option enabled
   - Google Analytics block
   - Meta Pixel blocks
   - Cal.com block
@@ -60,6 +60,31 @@ You can customize how your bot behaves on WhatsApp in the `Configure integration
 **Session expiration timeout**: A number from 0 to 48 which is the number of hours after which the session will expire. If the user doesn't interact with the bot for more than the timeout, the session will expire and if user sends a new message, it will start a new chat. The default is 4 hours.
 
 **Start bot condition**: A condition that will be evaluated when a user starts a conversation with your bot. If the condition is not met, the bot will not be triggered.
+
+## Collect position
+
+You can ask for the user's location with a basic [Text input block](../../editor/blocks/inputs/text). It will be saved as a variable with the latitude and longitude with the following format: `<LAT>, <LONG>`.
+
+<Tabs>
+  <Tab title="Flow">
+    <Frame style={{ maxWidth: '400px' }}>
+      <img
+        src="/images/whatsapp/position-flow.jpg"
+        alt="Position collection flow"
+        className="rounded-lg"
+      />
+    </Frame>
+  </Tab>
+  <Tab title="Bot">
+    <Frame style={{ maxWidth: '400px' }}>
+      <img
+        src="/images/whatsapp/position-bot.png"
+        alt="Position collection bot"
+        className="rounded-lg"
+      />
+    </Frame>
+  </Tab>
+</Tabs>
 
 ## FAQ
 
